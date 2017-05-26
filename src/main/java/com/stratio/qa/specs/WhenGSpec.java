@@ -27,7 +27,9 @@ import com.stratio.qa.cucumber.converter.NullableStringConverter;
 import com.stratio.qa.utils.ThreadProperty;
 import cucumber.api.DataTable;
 import cucumber.api.Transform;
+import cucumber.api.java.en.Given;
 import cucumber.api.java.en.When;
+import gherkin.formatter.model.DataTableRow;
 import org.apache.zookeeper.KeeperException;
 import org.assertj.core.api.Assertions;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -40,6 +42,8 @@ import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.Select;
 
 import java.io.*;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.regex.Pattern;
@@ -793,5 +797,60 @@ public class WhenGSpec extends BaseGSpec {
         }
 
         Assertions.assertThat(new File(absolutePathFile).isFile());
+    }
+
+    /**
+     * Modify a browser cookie
+     *
+     * @param name          name of the cookie to be modified
+     * @param table         table wit parameter to change (parameter|value)
+     * @throws Exception
+     */
+    @When("^I modify from browser cookie '(.+?)' the parameter:$")
+    public void modifySeleniumCookie(String name, DataTable table) throws Exception {
+
+        Set<org.openqa.selenium.Cookie> arrayListCookies = commonspec.getSeleniumCookies();
+        Iterator<org.openqa.selenium.Cookie> it = arrayListCookies.iterator();
+        org.openqa.selenium.Cookie newCookie = null;
+
+        while (it.hasNext() && newCookie == null) {
+            org.openqa.selenium.Cookie cookie = it.next();
+            if (cookie.getName().equals(name)) {
+                String value = cookie.getValue();
+                String domain = cookie.getDomain();
+                String path = cookie.getPath();
+                Date expiry = cookie.getExpiry();
+                boolean secure = cookie.isSecure();
+                boolean http = cookie.isHttpOnly();
+
+                for (DataTableRow row : table.getGherkinRows()) {
+                    String parameter = row.getCells().get(0);
+                    String parameterValue = row.getCells().get(1);
+                    if (parameter.equals("Value")) {
+                        value = parameterValue;
+                    } else if (parameter.equals("Domain")) {
+                        domain = parameterValue;
+                    } else if (parameter.equals("Path")) {
+                        path = parameterValue;
+                    } else if (parameter.equals("Expires") || parameter.equals("Max-Age")) {
+                        DateFormat df = new SimpleDateFormat("dd/MM/yyyy");
+                        expiry = df.parse(parameterValue);
+                    } else if (parameter.equals("Secure")) {
+                        secure = Boolean.valueOf(parameterValue);
+                    } else if (parameter.equals("HTTP")) {
+                        http = Boolean.valueOf(parameterValue);
+                    } else {
+                        throw new Exception("Parameter " + parameter + " is not correct");
+                    }
+                }
+                newCookie = new org.openqa.selenium.Cookie (name, value, domain, path, expiry, secure, http);
+                it.remove();
+            }
+        }
+        if (newCookie != null) {
+            commonspec.addCookieToSeleniumCookies(newCookie);
+        } else {
+            throw new Exception("Cookie with name " + name + " does not exist");
+        }
     }
 }

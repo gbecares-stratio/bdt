@@ -1274,6 +1274,20 @@ public class CommonG {
         this.seleniumCookies = cookies;
     }
 
+    public void addCookieToSeleniumCookies(org.openqa.selenium.Cookie cookie) {
+        this.seleniumCookies.add(cookie);
+    }
+
+    public void removeCookieFromSeleniumCookies(org.openqa.selenium.Cookie cookie) {
+        Iterator<org.openqa.selenium.Cookie> it = this.seleniumCookies.iterator();
+        while (it.hasNext()) {
+            org.openqa.selenium.Cookie nextCookie = it.next();
+            if (nextCookie.getName().equals(cookie.getName())) {
+                this.seleniumCookies.remove(nextCookie);
+            }
+        }
+    }
+
     public Map<String, String> getHeaders() {
         return headers;
     }
